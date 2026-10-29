@@ -230,7 +230,12 @@ function estado(el, txt, err){ $(el).textContent = txt; $(el).className = "statu
 // ---------- ElevenLabs ----------
 async function elError(r){
   let d=""; try{ const j=await r.json(); d = (j.detail && (j.detail.message||j.detail.status||j.detail)) || ""; }catch(e){}
-  if(r.status===401) return "La clave de ElevenLabs no es válida o no tiene permisos. Revísala en Ajustes.";
+  const det = String(d);
+  if(/missing_permissions|permission/i.test(det)){
+    const perm = (det.match(/permission\s+(\w+)/i)||[])[1];
+    return "A tu clave le falta un permiso" + (perm ? " (" + perm + ")" : "") + ". En ElevenLabs edita la clave y activa: Texto a voz = Acceso, Voces = Lectura, Usuario = Lectura.";
+  }
+  if(r.status===401) return "ElevenLabs no reconoce la clave. Revisa que la copiaste completa (empieza con sk_) y sin espacios. Si no, crea una nueva.";
   if(r.status===429) return "ElevenLabs está ocupado o llegaste al límite. Espera un momento.";
   if(/quota|credits/i.test(String(d))) return "Se acabaron tus créditos de ElevenLabs de este mes.";
   return "ElevenLabs respondió con un error (" + r.status + "). " + (typeof d==="string"?d:"");
@@ -250,7 +255,8 @@ async function tts(text, {rapido=false, lang=""}={}){
 }
 
 $("cargarVoces").onclick = async ()=>{
-  const key = $("elKey").value.trim();
+  const key = $("elKey").value.replace(/\s+/g,"");
+  $("elKey").value = key;
   if(!key){ estado("stVoz","Pega primero tu clave de ElevenLabs.",true); return; }
   estado("stVoz","Buscando tus voces…");
   try{
@@ -268,6 +274,7 @@ $("cargarVoces").onclick = async ()=>{
 
 $("guardarAjustes").onclick = ()=>{
   ["elKey","anKey","miNombre","negocio","inventario"].forEach(f=>cfg[f]=$(f).value.trim());
+  cfg.elKey = cfg.elKey.replace(/\s+/g,""); cfg.anKey = cfg.anKey.replace(/\s+/g,"");
   cfg.voiceId = $("voz").value || "";
   cfg.voiceName = cfg.voiceId ? $("voz").selectedOptions[0].text.replace(/^★ /,"") : "";
   cfg.frases = $("frasesTxt").value.split("\n").map(s=>s.trim()).filter(Boolean);
