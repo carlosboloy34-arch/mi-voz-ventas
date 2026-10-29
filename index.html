@@ -183,6 +183,14 @@ audio{width:100%}
       <p class="status" id="stVoz" aria-live="polite"></p>
     </div>
     <div class="card">
+      <h2>Traducción (Microsoft Translator)</h2>
+      <div><label for="msKey">Clave de Microsoft Translator</label><input id="msKey" type="password" autocomplete="off" placeholder="Clave 1 de tu recurso Translator"></div>
+      <div><label for="msRegion">Región</label><input id="msRegion" autocomplete="off" placeholder="Ej.: eastus"></div>
+      <p class="hint">Gratis hasta 2 millones de caracteres al mes. Si la dejas vacía, la app traduce con Claude.</p>
+      <div class="btns"><button id="probarMs" type="button">Probar traducción</button></div>
+      <p class="status" id="stMs" aria-live="polite"></p>
+    </div>
+    <div class="card">
       <h2>Redacción con IA (Claude)</h2>
       <div><label for="anKey">Clave API de Anthropic</label><input id="anKey" type="password" autocomplete="off" placeholder="sk-ant-…"></div>
       <p class="hint">Opcional. Sin ella puedes escribir tú las respuestas. Se crea en console.anthropic.com; cada respuesta cuesta una fracción de centavo.</p>
@@ -235,7 +243,7 @@ let cfg = load("cfg", {});
 let lib = load("lib", []);
 
 function aplicarCfg(){
-  ["elKey","anKey","miNombre","negocio","inventario"].forEach(f=>{ $(f).value = cfg[f]||""; });
+  ["elKey","anKey","msKey","msRegion","miNombre","negocio","inventario"].forEach(f=>{ $(f).value = cfg[f]||""; });
   $("frasesTxt").value = (cfg.frases && cfg.frases.length ? cfg.frases : FRASES_DEF).join("\n");
   if(cfg.voiceId){ $("voz").innerHTML = ""; const o=new Option(cfg.voiceName||cfg.voiceId, cfg.voiceId); $("voz").add(o); $("voz").value=cfg.voiceId; }
   $("setupBanner").hidden = !!(cfg.elKey && cfg.voiceId);
@@ -300,8 +308,8 @@ $("cargarVoces").onclick = async ()=>{
 };
 
 $("guardarAjustes").onclick = ()=>{
-  ["elKey","anKey","miNombre","negocio","inventario"].forEach(f=>cfg[f]=$(f).value.trim());
-  cfg.elKey = cfg.elKey.replace(/\s+/g,""); cfg.anKey = cfg.anKey.replace(/\s+/g,"");
+  ["elKey","anKey","msKey","msRegion","miNombre","negocio","inventario"].forEach(f=>cfg[f]=$(f).value.trim());
+  cfg.elKey = cfg.elKey.replace(/\s+/g,""); cfg.anKey = cfg.anKey.replace(/\s+/g,""); cfg.msKey = cfg.msKey.replace(/\s+/g,""); cfg.msRegion = cfg.msRegion.replace(/\s+/g,"").toLowerCase();
   cfg.voiceId = $("voz").value || "";
   cfg.voiceName = cfg.voiceId ? $("voz").selectedOptions[0].text.replace(/^★ /,"") : "";
   cfg.frases = $("frasesTxt").value.split("\n").map(s=>s.trim()).filter(Boolean);
@@ -326,12 +334,44 @@ async function claudeTxt(content, maxTokens){
   return (j.content||[]).map(c=>c.text||"").join("").trim();
 }
 const NOMBRE_IDIOMA = { en:"inglés estadounidense", pt:"portugués de Brasil", es:"español" };
+// Microsoft Translator (gratis hasta 2M caracteres/mes). Si no hay clave, se usa Claude.
+async function msTraducir(t, to, key, region){
+  key = key || cfg.msKey; region = region === undefined ? cfg.msRegion : region;
+  const headers = { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/json" };
+  if(region) headers["Ocp-Apim-Subscription-Region"] = region;
+  let r;
+  try{
+    r = await fetch("https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" + encodeURIComponent(to),
+      { method:"POST", headers, body: JSON.stringify([{ Text: t }]) });
+  }catch(e){ throw new Error("No hay conexión con Microsoft Translator. Revisa tu internet."); }
+  if(!r.ok){
+    let code = 0; try{ code = (await r.json()).error.code; }catch(_){}
+    if(r.status===401) throw new Error("Microsoft no reconoce la clave o la región. Revísalas en Ajustes.");
+    if(r.status===403 || code===403001) throw new Error("Se acabó tu cuota gratis de Microsoft este mes.");
+    if(r.status===429) throw new Error("Demasiadas traducciones seguidas. Espera un momento.");
+    throw new Error("Microsoft Translator respondió con un error (" + r.status + ").");
+  }
+  const j = await r.json();
+  return ((j[0] && j[0].translations && j[0].translations[0]) || {}).text || "";
+}
+function sinMotor(){ return new Error("Para traducir agrega en Ajustes tu clave de Microsoft Translator (gratis) o la de Anthropic."); }
 function traducirAlEspanol(t){
+  if(cfg.msKey) return msTraducir(t, "es");
+  if(!cfg.anKey) return Promise.reject(sinMotor());
   return claudeTxt(`Traduce al español latinoamericano este mensaje de un cliente de un concesionario de autos. Si ya está en español, devuélvelo igual. Responde solo con la traducción, sin comillas ni comentarios.\n\n${t}`, 400);
 }
 function traducirA(lang, t){
+  if(cfg.msKey) return msTraducir(t, lang);
+  if(!cfg.anKey) return Promise.reject(sinMotor());
   return claudeTxt(`Traduce al ${NOMBRE_IDIOMA[lang]||lang} lo que dice un vendedor de autos a su cliente por teléfono. Que suene natural y hablado, amable y seguro. Responde solo con la traducción, sin comillas ni comentarios.\n\n${t}`, 400);
 }
+$("probarMs").onclick = async ()=>{
+  const key = $("msKey").value.replace(/\s+/g,""), region = $("msRegion").value.replace(/\s+/g,"").toLowerCase();
+  if(!key){ estado("stMs","Pega primero tu clave de Microsoft.",true); return; }
+  estado("stMs","Probando…");
+  try{ const t = await msTraducir("Hi! Is the car still available?", "es", key, region); estado("stMs","Funciona: \"" + t + "\". Toca Guardar ajustes."); }
+  catch(e){ estado("stMs", e.message, true); }
+};
 
 $("traducirMsg").onclick = async ()=>{
   const q = $("pregunta").value.trim();
