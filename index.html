@@ -92,7 +92,9 @@ audio{width:100%}
         <div><label for="extra">Indicación (opcional)</label><input id="extra" placeholder="Ej.: ofrécele cita a las 10 am"></div>
       </div>
       <div class="btns"><button class="primary" id="redactar" type="button">Redactar con IA</button>
+        <button id="traducirMsg" type="button">Traducir al español</button>
         <button id="yoEscribo" type="button">Lo escribo yo</button></div>
+      <div class="trad" id="msgTradBox" hidden><b>Lo que dice el cliente</b><span id="msgTrad"></span></div>
       <p class="status" id="st1" aria-live="polite"></p>
     </div>
 
@@ -119,20 +121,45 @@ audio{width:100%}
   <!-- ========== LLAMADA ========== -->
   <section id="v-call" class="view" hidden>
     <div class="card">
-      <h2>Modo llamada</h2>
-      <p class="hint">Pon la llamada en altavoz. Escribe y toca <b>Hablar</b>: suena con tu voz al instante.</p>
-      <div><label for="idiomaCall">Idioma de la voz</label>
-        <select id="idiomaCall"><option value="">Automático</option><option value="en">Inglés</option><option value="es">Español</option><option value="pt">Portugués</option></select></div>
-      <textarea id="frase" placeholder="Escribe lo que quieres decir"></textarea>
+      <h2>Idioma del cliente</h2>
+      <select id="idiomaCall">
+        <option value="en">Inglés</option>
+        <option value="pt">Portugués</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
+    <div class="card">
+      <h2><span class="n">1</span>Lo que dice el cliente</h2>
+      <p class="hint">Toca <b>Escuchar</b>: la app escucha al cliente y te muestra en español lo que dijo.</p>
+      <button class="primary big" id="escuchar" type="button">Escuchar</button>
+      <div class="trad" id="enVivo" hidden><b>Escuchando…</b><span id="enVivoTxt"></span></div>
+      <ul class="lib" id="dichos"></ul>
+      <p class="status" id="stEsc" aria-live="polite"></p>
+    </div>
+    <div class="card">
+      <h2><span class="n">2</span>Tu respuesta</h2>
+      <p class="hint">Escribe en español. La app lo traduce y lo dice con tu voz en el idioma del cliente.</p>
+      <textarea id="frase" placeholder="Ej.: Sí, el carro está disponible, ¿puede venir el sábado?"></textarea>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="traducirAntes" checked style="width:auto"> Traducir antes de hablar</label>
       <button class="primary big" id="hablar" type="button">Hablar</button>
+      <div class="trad" id="dijeBox" hidden><b>Lo que dijiste</b><span id="dije"></span></div>
       <p class="status" id="stCall" aria-live="polite"></p>
     </div>
     <div class="card">
       <h2>Frases rápidas</h2>
       <p class="hint">Toca una para que suene. La primera vez tarda un segundo; después es inmediata.</p>
       <div class="chips" id="chips"></div>
-      <p class="hint">Puedes cambiarlas en Ajustes.</p>
+      <p class="hint">Puedes cambiarlas en Ajustes. Si están en español y el cliente habla otro idioma, se traducen solas.</p>
     </div>
+    <details class="card">
+      <summary><b>Cómo usarla en una llamada</b></summary>
+      <p class="hint">Durante una llamada normal, el celular le da el micrófono a la llamada y la app no puede escuchar. Lo que mejor funciona:</p>
+      <ul class="hint">
+        <li><b>Llamada en otro aparato:</b> contesta en una tablet, computadora o WhatsApp Web con altavoz, y deja esta app abierta en tu celular cerca del altavoz.</li>
+        <li><b>Solo responder:</b> si únicamente quieres hablar con tu voz, pon la llamada en altavoz y usa <b>Tu respuesta</b> o las frases rápidas. Eso sí funciona en el mismo celular.</li>
+        <li><b>Traducción del propio teléfono:</b> muchos Samsung Galaxy y Pixel traducen las llamadas solos ("Intérprete en vivo" o "Traducción de llamadas" en Ajustes).</li>
+      </ul>
+    </details>
   </section>
 
   <!-- ========== LIBRERÍA ========== -->
@@ -283,6 +310,38 @@ $("guardarAjustes").onclick = ()=>{
   aplicarCfg();
 };
 
+// ---------- Claude (redacción y traducción) ----------
+async function claudeTxt(content, maxTokens){
+  if(!cfg.anKey) throw new Error("Para traducir o redactar agrega tu clave de Anthropic en Ajustes.");
+  let r;
+  try{
+    r = await fetch("https://api.anthropic.com/v1/messages", { method:"POST",
+      headers:{ "x-api-key":cfg.anKey, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true", "content-type":"application/json" },
+      body: JSON.stringify({ model:"claude-haiku-5-5", max_tokens:maxTokens||400, messages:[{role:"user", content}] }) });
+  }catch(e){ throw new Error("No hay conexión con la IA. Revisa tu internet."); }
+  if(!r.ok) throw new Error(r.status===401 ? "La clave de Anthropic no es válida. Revísala en Ajustes." :
+    r.status===429 ? "Demasiadas solicitudes. Espera un momento." :
+    r.status===400 ? "Revisa que tu cuenta de Anthropic tenga crédito." : "La IA respondió con un error (" + r.status + ").");
+  const j = await r.json();
+  return (j.content||[]).map(c=>c.text||"").join("").trim();
+}
+const NOMBRE_IDIOMA = { en:"inglés estadounidense", pt:"portugués de Brasil", es:"español" };
+function traducirAlEspanol(t){
+  return claudeTxt(`Traduce al español latinoamericano este mensaje de un cliente de un concesionario de autos. Si ya está en español, devuélvelo igual. Responde solo con la traducción, sin comillas ni comentarios.\n\n${t}`, 400);
+}
+function traducirA(lang, t){
+  return claudeTxt(`Traduce al ${NOMBRE_IDIOMA[lang]||lang} lo que dice un vendedor de autos a su cliente por teléfono. Que suene natural y hablado, amable y seguro. Responde solo con la traducción, sin comillas ni comentarios.\n\n${t}`, 400);
+}
+
+$("traducirMsg").onclick = async ()=>{
+  const q = $("pregunta").value.trim();
+  if(!q){ estado("st1","Pega primero el mensaje del cliente.",true); return; }
+  $("traducirMsg").disabled = true; estado("st1","Traduciendo…");
+  try{ $("msgTrad").textContent = await traducirAlEspanol(q); $("msgTradBox").hidden = false; estado("st1",""); }
+  catch(e){ estado("st1", e.message, true); }
+  finally{ $("traducirMsg").disabled = false; }
+};
+
 // ---------- redacción con Claude ----------
 function prompt(q){
   const idioma = $("idioma").value==="auto" ? "el mismo idioma en que escribió el cliente" : $("idioma").value;
@@ -396,21 +455,81 @@ $("buscar").addEventListener("input", pintarLib);
 // ---------- modo llamada ----------
 const cacheFrases = new Map();
 const callAudio = new Audio();
+function pareceEspanol(t){ return /[ñáéíóú¿¡]|\b(el|la|los|que|usted|por favor|sí|carro|está)\b/i.test(t); }
+// Traduce (si hace falta) y dice el texto con la voz clonada. Devuelve lo que se dijo.
 async function decir(texto, btn){
-  const key = texto + "|" + $("idiomaCall").value;
-  let url = cacheFrases.get(key);
-  if(!url){ const b = await tts(texto, { rapido:true, lang:$("idiomaCall").value }); url = URL.createObjectURL(b); cacheFrases.set(key, url); }
+  const lang = $("idiomaCall").value;
+  const traducir = $("traducirAntes").checked && lang !== "es" && pareceEspanol(texto);
+  const key = texto + "|" + lang + "|" + traducir;
+  let item = cacheFrases.get(key);
+  if(!item){
+    const dicho = traducir ? await traducirA(lang, texto) : texto;
+    const b = await tts(dicho, { rapido:true, lang });
+    item = { url: URL.createObjectURL(b), dicho };
+    cacheFrases.set(key, item);
+  }
   document.querySelectorAll(".chip").forEach(c=>c.classList.remove("playing"));
   if(btn) btn.classList.add("playing");
-  callAudio.src = url; await callAudio.play();
+  pausarEscucha();
+  callAudio.src = item.url; await callAudio.play();
+  return item.dicho;
 }
-callAudio.onended = ()=>document.querySelectorAll(".chip").forEach(c=>c.classList.remove("playing"));
+callAudio.onended = ()=>{ document.querySelectorAll(".chip").forEach(c=>c.classList.remove("playing")); reanudarEscucha(); };
 $("hablar").onclick = async ()=>{
   const t = $("frase").value.trim(); if(!t){ estado("stCall","Escribe primero la frase.",true); return; }
-  $("hablar").disabled = true; estado("stCall","Generando…");
-  try{ await decir(t); estado("stCall",""); $("frase").value=""; }catch(e){ estado("stCall", e.message, true); }
+  $("hablar").disabled = true; estado("stCall","Preparando tu voz…");
+  try{
+    const dicho = await decir(t);
+    $("dije").textContent = dicho; $("dijeBox").hidden = false;
+    estado("stCall",""); $("frase").value="";
+  }catch(e){ estado("stCall", e.message, true); }
   finally{ $("hablar").disabled = false; }
 };
+$("idiomaCall").addEventListener("change", ()=>{ if(escuchando){ detenerEscucha(); iniciarEscucha(); } });
+
+// ---------- escuchar al cliente (reconocimiento de voz del navegador) ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const LOCALE = { en:"en-US", pt:"pt-BR", es:"es-US" };
+let rec = null, escuchando = false, pausado = false;
+function iniciarEscucha(){
+  if(!SR){ estado("stEsc","Este navegador no puede escuchar. Abre la app en Google Chrome.",true); return; }
+  rec = new SR(); rec.lang = LOCALE[$("idiomaCall").value] || "en-US"; rec.continuous = true; rec.interimResults = true;
+  rec.onresult = e=>{
+    let parcial = "";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t = e.results[i][0].transcript.trim();
+      if(e.results[i].isFinal){ if(t) agregarDicho(t); } else parcial += t + " ";
+    }
+    $("enVivoTxt").textContent = parcial;
+  };
+  rec.onerror = e=>{
+    if(e.error==="not-allowed" || e.error==="service-not-allowed"){ detenerEscucha(); estado("stEsc","Chrome no tiene permiso para usar el micrófono. Toca el candado junto a la dirección y permite el micrófono.",true); }
+    else if(e.error==="audio-capture"){ detenerEscucha(); estado("stEsc","El micrófono está ocupado, probablemente por la llamada. Mira la ayuda de abajo.",true); }
+  };
+  rec.onend = ()=>{ if(escuchando && !pausado){ try{ rec.start(); }catch(_){} } };
+  try{ rec.start(); }catch(_){}
+  escuchando = true; pausado = false;
+  $("escuchar").textContent = "Dejar de escuchar"; $("enVivo").hidden = false; $("enVivoTxt").textContent = ""; estado("stEsc","");
+}
+function detenerEscucha(){
+  escuchando = false; pausado = false;
+  if(rec){ try{ rec.stop(); }catch(_){} rec = null; }
+  $("escuchar").textContent = "Escuchar"; $("enVivo").hidden = true;
+}
+function pausarEscucha(){ if(escuchando && rec){ pausado = true; try{ rec.stop(); }catch(_){} } }
+function reanudarEscucha(){ if(escuchando && pausado && rec){ pausado = false; try{ rec.start(); }catch(_){} } }
+$("escuchar").onclick = ()=> escuchando ? detenerEscucha() : iniciarEscucha();
+
+async function agregarDicho(t){
+  const li = document.createElement("li");
+  const orig = document.createElement("div"); orig.className = "q"; orig.textContent = t;
+  const es = document.createElement("div"); es.style.fontWeight = "700"; es.textContent = $("idiomaCall").value==="es" ? t : "Traduciendo…";
+  li.append(orig, es); $("dichos").prepend(li);
+  while($("dichos").children.length > 12) $("dichos").lastChild.remove();
+  if($("idiomaCall").value==="es") return;
+  try{ es.textContent = await traducirAlEspanol(t); }
+  catch(e){ es.textContent = e.message; es.style.fontWeight = "400"; }
+}
 function pintarChips(){
   $("chips").innerHTML = "";
   (cfg.frases && cfg.frases.length ? cfg.frases : FRASES_DEF).forEach(f=>{
