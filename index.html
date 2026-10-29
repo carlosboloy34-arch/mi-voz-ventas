@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b6e76">
+<title>Mi Voz Ventas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: app de una columna para el celular; pestañas abajo: WhatsApp · Llamada · Librería · Ajustes */
+:root{
+  --bg:#f3f5f6; --card:#ffffff; --ink:#14232b; --muted:#5a6a72; --line:#d7dfe3;
+  --accent:#0b6e76; --accent-ink:#ffffff; --signal:#c77a00; --soft:#e4f0f1; --warn-bg:#fff4df; --wa:#1f8f4e;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f181c; --card:#172328; --ink:#e6eef0; --muted:#9db0b7; --line:#2b3b42;
+  --accent:#3fb7bf; --accent-ink:#06191c; --signal:#f0a93a; --soft:#1c3237; --warn-bg:#33280f; --wa:#35c06f; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;
+  padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:640px;margin:0 auto;padding-block:max(16px,env(safe-area-inset-top,0px)) 24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--f-display);font-weight:700;font-size:1.7rem;line-height:1.1;margin:0}
+.sub{margin:2px 0 0;color:var(--muted);font-size:.92rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card h2{font-family:var(--f-display);font-weight:600;font-size:1.15rem;margin:0;display:flex;align-items:center;gap:8px}
+.n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:.85rem}
+label{font-weight:700;font-size:.88rem;display:block;margin-bottom:4px}
+.hint{color:var(--muted);font-size:.84rem;margin:0}
+textarea,select,input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{resize:vertical;min-height:84px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:460px){.row{grid-template-columns:1fr}}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-weight:700;border-radius:8px;padding:11px 16px;border:1px solid var(--accent);cursor:pointer;background:transparent;color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink)}
+button.wa{background:var(--wa);border-color:var(--wa);color:#fff}
+button.big{width:100%;padding:16px;font-size:1.1rem}
+button:disabled{opacity:.55;cursor:wait}
+.status{font-size:.9rem;color:var(--muted);min-height:1.2em;margin:0}
+.status.err{color:var(--signal)}
+.trad{background:var(--soft);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.trad b{display:block;font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.meta{display:flex;gap:12px;flex-wrap:wrap;font-size:.84rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.flag{background:var(--warn-bg);border-left:4px solid var(--signal);padding:10px 12px;border-radius:6px;font-size:.9rem}
+audio{width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border-radius:999px;padding:9px 14px;font-weight:400;border:1px solid var(--line);color:var(--ink);background:var(--card);text-align:left}
+.chip.playing{border-color:var(--accent);background:var(--soft)}
+.lib{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.lib li{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.lib .q{color:var(--muted);font-size:.84rem}
+.lib .acts{display:flex;gap:6px;flex-wrap:wrap}
+.lib .acts button{padding:6px 10px;font-size:.85rem}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
+.tabs button{border:0;border-radius:0;padding:12px 4px;font-family:var(--f-display);font-size:1rem;color:var(--muted);background:transparent}
+.tabs button[aria-selected="true"]{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+.setup{background:var(--warn-bg);border-radius:8px;padding:12px;font-size:.92rem}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Mi voz ventas</h1>
+    <p class="sub" id="subtitulo">Responde a tus clientes con tu voz clonada.</p>
+  </header>
+
+  <div class="setup" id="setupBanner" hidden>Falta configurar tu clave de ElevenLabs y tu voz. Ve a <b>Ajustes</b>.</div>
+
+  <!-- ========== WHATSAPP ========== -->
+  <section id="v-wa" class="view">
+    <div class="card">
+      <h2><span class="n">1</span>Mensaje del cliente</h2>
+      <textarea id="pregunta" placeholder="Pega aquí lo que te escribió el cliente"></textarea>
+      <div class="row">
+        <div><label for="idioma">Responder en</label>
+          <select id="idioma">
+            <option value="auto">El idioma del cliente</option>
+            <option value="inglés">Inglés</option>
+            <option value="español">Español</option>
+            <option value="portugués">Portugués</option>
+          </select></div>
+        <div><label for="extra">Indicación (opcional)</label><input id="extra" placeholder="Ej.: ofrécele cita a las 10 am"></div>
+      </div>
+      <div class="btns"><button class="primary" id="redactar" type="button">Redactar con IA</button>
+        <button id="yoEscribo" type="button">Lo escribo yo</button></div>
+      <p class="status" id="st1" aria-live="polite"></p>
+    </div>
+
+    <div class="card" id="paso2">
+      <h2><span class="n">2</span>Revisa y corrige</h2>
+      <textarea id="respuesta" rows="6" placeholder="Aquí aparece la respuesta. Puedes editarla."></textarea>
+      <div class="meta"><span id="palabras">0 palabras</span><span id="segundos">≈ 0 s</span><span id="creditos">≈ 0 créditos</span></div>
+      <div class="flag" id="aviso" hidden>Hay datos marcados con [CONFIRMAR]. Corrígelos antes de generar el audio.</div>
+      <div class="trad" id="tradBox" hidden><b>Qué dice, en español</b><span id="trad"></span></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">3</span>Audio con tu voz</h2>
+      <button class="primary big" id="generar" type="button">Generar audio</button>
+      <audio id="player" controls hidden></audio>
+      <div class="btns" id="accionesAudio" hidden>
+        <button class="wa" id="enviar" type="button">Enviar por WhatsApp</button>
+        <button id="guardarLib" type="button">Guardar en librería</button>
+      </div>
+      <p class="status" id="st3" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- ========== LLAMADA ========== -->
+  <section id="v-call" class="view" hidden>
+    <div class="card">
+      <h2>Modo llamada</h2>
+      <p class="hint">Pon la llamada en altavoz. Escribe y toca <b>Hablar</b>: suena con tu voz al instante.</p>
+      <div><label for="idiomaCall">Idioma de la voz</label>
+        <select id="idiomaCall"><option value="">Automático</option><option value="en">Inglés</option><option value="es">Español</option><option value="pt">Portugués</option></select></div>
+      <textarea id="frase" placeholder="Escribe lo que quieres decir"></textarea>
+      <button class="primary big" id="hablar" type="button">Hablar</button>
+      <p class="status" id="stCall" aria-live="polite"></p>
+    </div>
+    <div class="card">
+      <h2>Frases rápidas</h2>
+      <p class="hint">Toca una para que suene. La primera vez tarda un segundo; después es inmediata.</p>
+      <div class="chips" id="chips"></div>
+      <p class="hint">Puedes cambiarlas en Ajustes.</p>
+    </div>
+  </section>
+
+  <!-- ========== LIBRERÍA ========== -->
+  <section id="v-lib" class="view" hidden>
+    <div class="card">
+      <h2>Librería de respuestas</h2>
+      <input id="buscar" placeholder="Buscar: financiamiento, Camry, sábado…">
+      <ul class="lib" id="libList"></ul>
+      <p class="hint" id="libVacia">Aún no guardas respuestas. Cuando una te guste, toca <b>Guardar en librería</b>.</p>
+    </div>
+  </section>
+
+  <!-- ========== AJUSTES ========== -->
+  <section id="v-set" class="view" hidden>
+    <div class="card">
+      <h2>Tu voz (ElevenLabs)</h2>
+      <div><label for="elKey">Clave API de ElevenLabs</label><input id="elKey" type="password" autocomplete="off" placeholder="sk_…"></div>
+      <p class="hint">En ElevenLabs: menú → Desarrolladores → Claves API → Crear clave. Se guarda solo en este celular.</p>
+      <div class="btns"><button id="cargarVoces" type="button">Buscar mis voces</button></div>
+      <div><label for="voz">Voz</label><select id="voz"><option value="">Primero busca tus voces</option></select></div>
+      <p class="status" id="stVoz" aria-live="polite"></p>
+    </div>
+    <div class="card">
+      <h2>Redacción con IA (Claude)</h2>
+      <div><label for="anKey">Clave API de Anthropic</label><input id="anKey" type="password" autocomplete="off" placeholder="sk-ant-…"></div>
+      <p class="hint">Opcional. Sin ella puedes escribir tú las respuestas. Se crea en console.anthropic.com; cada respuesta cuesta una fracción de centavo.</p>
+    </div>
+    <div class="card">
+      <h2>Datos de tu concesionario</h2>
+      <p class="hint">La IA solo usa estos datos. Si falta algo, marca [CONFIRMAR] en vez de inventar.</p>
+      <div><label for="miNombre">Tu nombre</label><input id="miNombre"></div>
+      <div><label for="negocio">Concesionario, dirección y horario</label><textarea id="negocio"></textarea></div>
+      <div><label for="inventario">Autos, precios y promociones</label><textarea id="inventario"></textarea></div>
+    </div>
+    <div class="card">
+      <h2>Frases rápidas para llamadas</h2>
+      <p class="hint">Una frase por línea.</p>
+      <textarea id="frasesTxt" rows="8"></textarea>
+    </div>
+    <button class="primary big" id="guardarAjustes" type="button">Guardar ajustes</button>
+    <p class="status" id="stSet" aria-live="polite"></p>
+  </section>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-v="v-wa" aria-selected="true">WhatsApp</button>
+  <button role="tab" data-v="v-call" aria-selected="false">Llamada</button>
+  <button role="tab" data-v="v-lib" aria-selected="false">Librería</button>
+  <button role="tab" data-v="v-set" aria-selected="false">Ajustes</button>
+</nav>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const EL = "https://api.elevenlabs.io/v1";
+const FRASES_DEF = [
+  "Un momento, por favor, ya lo reviso.",
+  "Sí, claro, ese carro todavía está disponible.",
+  "¿Qué día le queda mejor para venir a verlo?",
+  "Tenemos varias opciones de financiamiento.",
+  "Perfecto, lo espero en el concesionario.",
+  "One moment please, let me check that for you.",
+  "Yes, that car is still available.",
+  "What day works best for you to come see it?",
+  "We have several financing options.",
+  "Perfect, I'll see you at the dealership."
+];
+
+// ---------- almacenamiento local ----------
+function load(k, d){ try{ const v = localStorage.getItem(k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+let cfg = load("cfg", {});
+let lib = load("lib", []);
+
+function aplicarCfg(){
+  ["elKey","anKey","miNombre","negocio","inventario"].forEach(f=>{ $(f).value = cfg[f]||""; });
+  $("frasesTxt").value = (cfg.frases && cfg.frases.length ? cfg.frases : FRASES_DEF).join("\n");
+  if(cfg.voiceId){ $("voz").innerHTML = ""; const o=new Option(cfg.voiceName||cfg.voiceId, cfg.voiceId); $("voz").add(o); $("voz").value=cfg.voiceId; }
+  $("setupBanner").hidden = !!(cfg.elKey && cfg.voiceId);
+  $("subtitulo").textContent = cfg.voiceName ? "Voz: " + cfg.voiceName : "Responde a tus clientes con tu voz clonada.";
+  pintarChips();
+}
+
+// ---------- pestañas ----------
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected", x===b));
+  document.querySelectorAll(".view").forEach(v=>v.hidden = v.id!==b.dataset.v);
+  if(b.dataset.v==="v-lib") pintarLib();
+  window.scrollTo(0,0);
+});
+function irA(v){ document.querySelector(`.tabs button[data-v="${v}"]`).click(); }
+
+function estado(el, txt, err){ $(el).textContent = txt; $(el).className = "status" + (err?" err":""); }
+
+// ---------- ElevenLabs ----------
+async function elError(r){
+  let d=""; try{ const j=await r.json(); d = (j.detail && (j.detail.message||j.detail.status||j.detail)) || ""; }catch(e){}
+  if(r.status===401) return "La clave de ElevenLabs no es válida o no tiene permisos. Revísala en Ajustes.";
+  if(r.status===429) return "ElevenLabs está ocupado o llegaste al límite. Espera un momento.";
+  if(/quota|credits/i.test(String(d))) return "Se acabaron tus créditos de ElevenLabs de este mes.";
+  return "ElevenLabs respondió con un error (" + r.status + "). " + (typeof d==="string"?d:"");
+}
+async function tts(text, {rapido=false, lang=""}={}){
+  if(!cfg.elKey || !cfg.voiceId) throw new Error("Configura tu clave y tu voz en Ajustes.");
+  const body = { text, model_id: rapido ? "eleven_flash_v2_5" : "eleven_multilingual_v2",
+    voice_settings:{ stability:0.5, similarity_boost:0.8 } };
+  if(rapido && lang) body.language_code = lang;
+  let r;
+  try{
+    r = await fetch(`${EL}/text-to-speech/${encodeURIComponent(cfg.voiceId)}?output_format=mp3_44100_128`, {
+      method:"POST", headers:{ "xi-api-key":cfg.elKey, "Content-Type":"application/json", "Accept":"audio/mpeg" }, body:JSON.stringify(body) });
+  }catch(e){ throw new Error("No hay conexión con ElevenLabs. Revisa tu internet."); }
+  if(!r.ok) throw new Error(await elError(r));
+  return await r.blob();
+}
+
+$("cargarVoces").onclick = async ()=>{
+  const key = $("elKey").value.trim();
+  if(!key){ estado("stVoz","Pega primero tu clave de ElevenLabs.",true); return; }
+  estado("stVoz","Buscando tus voces…");
+  try{
+    const r = await fetch(`${EL}/voices`, { headers:{ "xi-api-key":key } });
+    if(!r.ok) throw new Error(await elError(r));
+    const j = await r.json();
+    const voces = (j.voices||[]).sort((a,b)=>(b.category==="cloned")-(a.category==="cloned"));
+    $("voz").innerHTML = "";
+    voces.forEach(v=>$("voz").add(new Option((v.category==="cloned"?"★ ":"") + v.name, v.voice_id)));
+    const mia = voces.find(v=>v.category==="cloned");
+    if(mia) $("voz").value = mia.voice_id;
+    estado("stVoz", mia ? "Encontré tu voz clonada: " + mia.name + ". Toca Guardar ajustes." : "No encontré voces clonadas. Elige una de la lista.");
+  }catch(e){ estado("stVoz", e.message, true); }
+};
+
+$("guardarAjustes").onclick = ()=>{
+  ["elKey","anKey","miNombre","negocio","inventario"].forEach(f=>cfg[f]=$(f).value.trim());
+  cfg.voiceId = $("voz").value || "";
+  cfg.voiceName = cfg.voiceId ? $("voz").selectedOptions[0].text.replace(/^★ /,"") : "";
+  cfg.frases = $("frasesTxt").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  cacheFrases.clear();
+  estado("stSet", save("cfg", cfg) ? "Guardado en este celular." : "No se pudo guardar. ¿Estás en modo incógnito?", false);
+  aplicarCfg();
+};
+
+// ---------- redacción con Claude ----------
+function prompt(q){
+  const idioma = $("idioma").value==="auto" ? "el mismo idioma en que escribió el cliente" : $("idioma").value;
+  return `Eres el asistente de un vendedor de autos${cfg.miNombre?` llamado ${cfg.miNombre}`:""} que atiende clientes en Estados Unidos. Su trabajo es lograr que el cliente visite el concesionario.
+
+Redacta la respuesta que el vendedor enviará como NOTA DE VOZ, en ${idioma}.
+Reglas:
+- Primera persona, tono cálido, seguro y natural, como se habla.
+- Máximo 90 palabras. Sin emojis, listas, símbolos ni URLs.
+- Usa SOLO los datos de abajo. Nunca inventes precios, disponibilidad, requisitos de financiamiento ni horarios. Si falta un dato, escribe [CONFIRMAR: qué falta] o di que lo confirmará en persona.
+- Termina invitando a visitar el concesionario, con un día u hora concreta si el cliente dio pistas.
+${$("extra").value.trim()?"- Indicación del vendedor: "+$("extra").value.trim():""}
+
+CONCESIONARIO:
+${cfg.negocio||"(no indicado)"}
+AUTOS Y PROMOCIONES:
+${cfg.inventario||"(no indicado)"}
+
+MENSAJE DEL CLIENTE:
+${q}
+
+Responde solo con JSON: {"respuesta":"texto de la nota de voz","traduccion_es":"la respuesta en español (vacío si ya está en español)"}`;
+}
+$("redactar").onclick = async ()=>{
+  const q = $("pregunta").value.trim();
+  if(!q){ estado("st1","Pega primero el mensaje del cliente.",true); return; }
+  if(!cfg.anKey){ estado("st1","Para redactar con IA agrega tu clave de Anthropic en Ajustes, o toca \"Lo escribo yo\".",true); return; }
+  $("redactar").disabled = true; estado("st1","Redactando…");
+  try{
+    const r = await fetch("https://api.anthropic.com/v1/messages", { method:"POST",
+      headers:{ "x-api-key":cfg.anKey, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true", "content-type":"application/json" },
+      body: JSON.stringify({ model:"claude-haiku-5-5", max_tokens:700, messages:[{role:"user", content:prompt(q)}] }) });
+    if(!r.ok){ throw new Error(r.status===401 ? "La clave de Anthropic no es válida. Revísala en Ajustes." :
+      r.status===429 ? "Demasiadas solicitudes. Espera un momento." : "La IA respondió con un error (" + r.status + ")."); }
+    const j = await r.json();
+    const txt = (j.content||[]).map(c=>c.text||"").join("");
+    const m = txt.slice(txt.indexOf("{"), txt.lastIndexOf("}")+1);
+    let o; try{ o = JSON.parse(m); }catch(e){ o = { respuesta: txt, traduccion_es:"" }; }
+    $("respuesta").value = String(o.respuesta||"").trim();
+    $("trad").textContent = String(o.traduccion_es||"").trim(); $("tradBox").hidden = !$("trad").textContent;
+    contar(); limpiarAudio(); estado("st1","Listo. Revísalo abajo.");
+    $("paso2").scrollIntoView({block:"start", behavior:"smooth"});
+  }catch(e){ estado("st1", e.message || "No se pudo redactar.", true); }
+  finally{ $("redactar").disabled = false; }
+};
+$("yoEscribo").onclick = ()=>{ $("respuesta").focus(); $("paso2").scrollIntoView({block:"start"}); };
+
+function contar(){
+  const t = $("respuesta").value.trim(); const n = t ? t.split(/\s+/).length : 0;
+  $("palabras").textContent = n + " palabras";
+  $("segundos").textContent = "≈ " + Math.round(n/2.5) + " s";
+  $("creditos").textContent = "≈ " + t.length + " créditos";
+  $("aviso").hidden = !/\[CONFIRMAR/i.test(t);
+}
+$("respuesta").addEventListener("input", ()=>{ contar(); limpiarAudio(); });
+
+// ---------- audio para WhatsApp ----------
+let audioBlob = null, audioUrl = null;
+function limpiarAudio(){ audioBlob=null; if(audioUrl){ URL.revokeObjectURL(audioUrl); audioUrl=null; } $("player").hidden=true; $("accionesAudio").hidden=true; }
+$("generar").onclick = async ()=>{
+  const t = $("respuesta").value.trim();
+  if(!t){ estado("st3","Primero escribe o redacta la respuesta.",true); return; }
+  if(/\[CONFIRMAR/i.test(t)){ estado("st3","Corrige los [CONFIRMAR] antes de generar.",true); return; }
+  $("generar").disabled = true; estado("st3","Generando con tu voz…");
+  try{
+    limpiarAudio();
+    audioBlob = await tts(t);
+    audioUrl = URL.createObjectURL(audioBlob);
+    $("player").src = audioUrl; $("player").hidden = false; $("accionesAudio").hidden = false;
+    estado("st3","Escúchalo y envíalo.");
+  }catch(e){ estado("st3", e.message, true); }
+  finally{ $("generar").disabled = false; }
+};
+$("enviar").onclick = async ()=>{
+  if(!audioBlob) return;
+  const file = new File([audioBlob], "respuesta.mp3", { type:"audio/mpeg" });
+  if(navigator.canShare && navigator.canShare({ files:[file] })){
+    try{ await navigator.share({ files:[file] }); estado("st3","Elige WhatsApp y el chat del cliente."); }
+    catch(e){ if(e.name!=="AbortError") estado("st3","No se pudo compartir. Usa la descarga.",true); }
+  } else {
+    const a = document.createElement("a"); a.href = audioUrl; a.download = "respuesta.mp3"; a.click();
+    estado("st3","Tu navegador no permite compartir directo. Se descargó el audio: adjúntalo en WhatsApp.");
+  }
+};
+$("guardarLib").onclick = ()=>{
+  const t = $("respuesta").value.trim(); if(!t) return;
+  lib.unshift({ id: Date.now(), q: $("pregunta").value.trim(), r: t, es: $("trad").textContent, f: new Date().toLocaleDateString("es") });
+  lib = lib.slice(0,200);
+  estado("st3", save("lib", lib) ? "Guardada en tu librería." : "No se pudo guardar.");
+};
+
+// ---------- librería ----------
+function pintarLib(){
+  const q = $("buscar").value.trim().toLowerCase();
+  const items = lib.filter(x=>!q || (x.q+" "+x.r+" "+x.es).toLowerCase().includes(q));
+  $("libList").innerHTML = "";
+  $("libVacia").hidden = lib.length>0;
+  items.forEach(x=>{
+    const li = document.createElement("li");
+    const p = document.createElement("div"); p.textContent = x.r;
+    const qq = document.createElement("div"); qq.className="q"; qq.textContent = (x.f?x.f+" · ":"") + (x.q ? "Cliente: " + x.q.slice(0,120) : "");
+    const acts = document.createElement("div"); acts.className="acts";
+    const usar = document.createElement("button"); usar.textContent="Usar"; usar.onclick=()=>{ $("respuesta").value=x.r; $("trad").textContent=x.es||""; $("tradBox").hidden=!x.es; contar(); limpiarAudio(); irA("v-wa"); $("paso2").scrollIntoView({block:"start"}); };
+    const borrar = document.createElement("button"); borrar.textContent="Borrar";
+    borrar.onclick=()=>{ if(borrar.dataset.ok){ lib=lib.filter(y=>y.id!==x.id); save("lib",lib); pintarLib(); } else { borrar.dataset.ok=1; borrar.textContent="Toca otra vez para borrar"; } };
+    acts.append(usar, borrar); li.append(p, qq, acts); $("libList").append(li);
+  });
+}
+$("buscar").addEventListener("input", pintarLib);
+
+// ---------- modo llamada ----------
+const cacheFrases = new Map();
+const callAudio = new Audio();
+async function decir(texto, btn){
+  const key = texto + "|" + $("idiomaCall").value;
+  let url = cacheFrases.get(key);
+  if(!url){ const b = await tts(texto, { rapido:true, lang:$("idiomaCall").value }); url = URL.createObjectURL(b); cacheFrases.set(key, url); }
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("playing"));
+  if(btn) btn.classList.add("playing");
+  callAudio.src = url; await callAudio.play();
+}
+callAudio.onended = ()=>document.querySelectorAll(".chip").forEach(c=>c.classList.remove("playing"));
+$("hablar").onclick = async ()=>{
+  const t = $("frase").value.trim(); if(!t){ estado("stCall","Escribe primero la frase.",true); return; }
+  $("hablar").disabled = true; estado("stCall","Generando…");
+  try{ await decir(t); estado("stCall",""); $("frase").value=""; }catch(e){ estado("stCall", e.message, true); }
+  finally{ $("hablar").disabled = false; }
+};
+function pintarChips(){
+  $("chips").innerHTML = "";
+  (cfg.frases && cfg.frases.length ? cfg.frases : FRASES_DEF).forEach(f=>{
+    const b = document.createElement("button"); b.className="chip"; b.type="button"; b.textContent=f;
+    b.onclick = async ()=>{ try{ estado("stCall",""); await decir(f, b); }catch(e){ estado("stCall", e.message, true); irA("v-call"); } };
+    $("chips").append(b);
+  });
+}
+
+aplicarCfg(); contar();
+if(!(cfg.elKey && cfg.voiceId)) irA("v-set");
+</script>
+</body>
+</html>
